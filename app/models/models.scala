@@ -1,7 +1,7 @@
 package models
 
 import org.squeryl.{KeyedEntity, Query, Schema, Table}
-import org.squeryl.dsl.{OneToMany}
+import org.squeryl.dsl.{OneToMany, ManyToOne}
 import org.squeryl.PrimitiveTypeMode._
 import collection.Iterable
 
@@ -25,7 +25,9 @@ case class User(id: Long, name: String) extends KeyedEntity[Long] {
   lazy val boards: OneToMany[Board] = Database.userToBoard.left(this)
 }
 
-case class Board(id: Long, title: String, content: String, user_id: Long) extends KeyedEntity[Long]
+case class Board(id: Long, title: String, content: String, user_id: Long) extends KeyedEntity[Long] {
+  lazy val user: ManyToOne[User] = Database.userToBoard.right(this)
+}
 
 object Board {
   def allQ: Query[Board] = from(Database.boardsTable) {
@@ -78,5 +80,19 @@ object User {
 
   def update(user: User) {
     inTransaction{ Database.usersTable.update(user) }
+  }
+
+  def addBoard(user: User, board: Board) = {
+
+    // user.boards.assign(board)
+    // transaction {
+    //   Database.boardsTable.insert(board)
+    // }
+
+    // only work with extending KeyedEntity classes
+    transaction {
+      user.boards.associate(board)
+    }
+
   }
 }

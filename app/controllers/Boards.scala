@@ -21,7 +21,9 @@ object Boards extends Controller {
   }
 
   def addBoard = Action {
-    println(Board.insert(Board(0, "testTitle7", "testContent7", 2L)))
+    val user:User = User.findOne(2L)
+    User.addBoard(user, Board(0, "testTitle13", "testContent13", 0))
+    // println(Board.insert(Board(0, "testTitle7", "testContent7", 0)))
     Ok("success")
   }
 }
