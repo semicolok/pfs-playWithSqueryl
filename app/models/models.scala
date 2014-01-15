@@ -1,13 +1,29 @@
 package models
 
-import org.squeryl.KeyedEntity
-import org.squeryl.Schema
-import org.squeryl.Table
+import org.squeryl.{KeyedEntity, Query, Schema, Table}
+import org.squeryl.dsl.{OneToMany}
 import org.squeryl.PrimitiveTypeMode._
-import org.squeryl.Query
 import collection.Iterable
 
-case class User(id: Long, name: String) extends KeyedEntity[Long]
+object Database extends Schema {
+  val usersTable: Table[User] = table[User]("User")
+  val boardsTable: Table[Board] = table[Board]("Board")
+
+  val userToBoard = oneToManyRelation(usersTable, boardsTable)
+    .via((u, b) => u.id === b.user_id)
+
+  on(usersTable) { u => declare {
+    u.id is(autoIncremented)
+    }}
+
+  on(boardsTable) { b => declare {
+    b.id is(autoIncremented)
+    }}
+}
+
+case class User(id: Long, name: String) extends KeyedEntity[Long] {
+  lazy val boards: OneToMany[Board] = Database.userToBoard.left(this)
+}
 
 case class Board(id: Long, title: String, content: String, user_id: Long) extends KeyedEntity[Long]
 
@@ -23,6 +39,11 @@ object Board {
 
   def findByUserNameLike(name: String): Iterable[Board] = inTransaction {
     findByUserNameLikeQ(name).toList
+  }
+
+  def findByUserId(id: Long): Iterable[Board] = inTransaction {
+    // from(Database.boardsTable)(board => where(board.user_id === id).select(board).orderBy(board.id asc)).toList
+    User.findOne(id).boards.toList
   }
 
   def findAll: Iterable[Board] = inTransaction {
@@ -43,6 +64,10 @@ object User {
     user => select(user) orderBy(user.id asc)
   }
 
+  def findOne(id: Long): User = inTransaction {
+    from(Database.usersTable)(user => where(user.id === id) select(user)).single
+  }
+
   def findAll: Iterable[User] = inTransaction {
     allQ.toList
   }
@@ -54,17 +79,4 @@ object User {
   def update(user: User) {
     inTransaction{ Database.usersTable.update(user) }
   }
-}
-
-object Database extends Schema {
-  val usersTable: Table[User] = table[User]("User")
-  val boardsTable: Table[Board] = table[Board]("Board")
-
-  on(usersTable) { u => declare {
-    u.id is(autoIncremented)
-    }}
-
-  on(boardsTable) { b => declare {
-    b.id is(autoIncremented)
-    }}
 }

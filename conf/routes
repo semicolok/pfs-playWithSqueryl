@@ -12,8 +12,12 @@ GET  /users  controllers.Users.findAll
 
 GET  /users/insert/test  controllers.Users.addUser
 
+GET  /users/:id  controllers.Users.findById(id: Long)
+
 GET  /boards  controllers.Boards.findAll
 
 GET  /boards/insert/test  controllers.Boards.addBoard
+
+GET  /boards/user/:id  controllers.Boards.findMyBoards(id: Long)
 
 GET  /boards/:name  controllers.Boards.findByUserName(name: String)
